@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kimyo OVR">
+<meta name="theme-color" content="#0a0e1a">
+<title>Kimyo OVR</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--surface:#111827;--card:#1a2235;--border:#2a3a55;--a1:#00d4ff;--a2:#ff6b35;--a3:#39ff14;--a4:#bf5af2;--text:#e8f0fe;--muted:#6b7fa3;--ok:#39ff14;--no:#ff3060;--gold:#ffd700;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Exo 2',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(0,212,255,.06) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 90%,rgba(191,90,242,.06) 0%,transparent 60%);pointer-events:none;z-index:0;}
+.wrap{max-width:900px;margin:0 auto;padding:16px;position:relative;z-index:1;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* SCREENS */
+.pg{display:none;animation:fadeIn .3s ease;}
+.pg.on{display:block;}
+#pg-login{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+#pg-login.on{display:flex;}
+
+/* LOGIN */
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:36px 28px;width:100%;max-width:360px;text-align:center;position:relative;overflow:hidden;}
+.login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--a1),var(--a4),var(--a2));}
+.login-logo{font-size:3rem;margin-bottom:8px;}
+.login-title{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,var(--a1),var(--a4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;}
+.login-sub{color:var(--muted);font-size:.8rem;margin-bottom:24px;}
+.login-inp{width:100%;background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-size:1.4rem;text-align:center;outline:none;letter-spacing:6px;font-weight:700;font-family:'Orbitron',monospace;transition:border-color .2s;}
+.login-inp:focus{border-color:var(--a1);}
+.login-btn{width:100%;margin-top:14px;padding:15px;background:linear-gradient(135deg,var(--a1),var(--a4));border:none;border-radius:12px;color:#000;font-family:'Orbitron',monospace;font-size:.95rem;font-weight:900;cursor:pointer;letter-spacing:1px;transition:transform .2s;}
+.login-btn:active{transform:scale(.97);}
+.login-err{color:var(--no);font-size:.82rem;margin-top:10px;display:none;padding:8px;background:rgba(255,48,96,.1);border-radius:8px;}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:16px;border-bottom:1px solid var(--border);}
+.hdr-title{font-family:'Orbitron',monospace;font-size:.85rem;color:var(--a1);}
+.hdr-right{display:flex;gap:8px;align-items:center;}
+.badge{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:5px 12px;font-size:.76rem;}
+.out-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 11px;color:var(--muted);font-size:.74rem;cursor:pointer;font-family:'Exo 2',sans-serif;}
+.out-btn:active{color:var(--no);border-color:var(--no);}
+
+/* SECTION CARDS */
+.sec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
+.sec-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 14px;cursor:pointer;transition:transform .2s;text-align:center;}
+.sec-card:active{transform:scale(.97);}
+.sec-icon{font-size:1.8rem;margin-bottom:6px;}
+.sec-name{font-family:'Orbitron',monospace;font-size:.66rem;letter-spacing:1px;margin-bottom:8px;}
+.sec-bar{height:6px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:4px;}
+.sec-fill{height:100%;border-radius:4px;transition:width .8s;}
+.sec-pct{font-size:.7rem;margin-top:3px;}
+.sec-none{font-size:.7rem;color:var(--no);margin-top:4px;}
+
+/* STATS ROW */
+.stats{display:flex;gap:10px;margin-bottom:18px;}
+.sp{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px;flex:1;text-align:center;}
+.sp-v{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:900;display:block;}
+.sp-l{color:var(--muted);font-size:.68rem;}
+.sp.gold .sp-v{color:var(--gold);}
+.sp.green .sp-v{color:var(--ok);}
+.sp.red .sp-v{color:var(--no);}
+
+/* GAME */
+.g-stats{display:flex;gap:8px;margin-bottom:10px;}
+.gp{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:5px 12px;font-size:.76rem;display:flex;align-items:center;gap:4px;}
+.gp-v{font-family:'Orbitron',monospace;font-weight:700;font-size:.86rem;}
+.gp.sc .gp-v{color:var(--gold);}
+.gp.lv .gp-v{color:var(--no);}
+.gp.st .gp-v{color:var(--ok);}
+.prog-wrap{background:var(--border);border-radius:6px;height:6px;margin-bottom:8px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--a1),var(--a4));border-radius:6px;transition:width .4s;}
+.timer-wrap{background:var(--border);border-radius:4px;height:4px;margin-bottom:12px;overflow:hidden;}
+.timer-fill{height:100%;border-radius:4px;background:var(--ok);transition:width .1s linear,background .3s;}
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:12px;position:relative;overflow:hidden;}
+.q-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--a1),var(--a4),var(--a2));}
+.q-cat{font-size:.62rem;letter-spacing:2px;color:var(--a1);font-family:'Orbitron',monospace;margin-bottom:6px;}
+.q-txt{font-size:.95rem;line-height:1.6;margin-bottom:6px;}
+.q-form{font-family:'Courier New',monospace;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:9px 12px;margin:8px 0;font-size:.88rem;color:var(--a1);word-break:break-all;line-height:1.6;}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.opt{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.85rem;cursor:pointer;text-align:left;line-height:1.4;transition:all .15s;}
+.opt:active:not(:disabled){transform:scale(.98);}
+.opt.ok{border-color:var(--ok);background:rgba(57,255,20,.12);color:var(--ok);}
+.opt.no{border-color:var(--no);background:rgba(255,48,96,.10);color:var(--no);}
+.fb{padding:11px 14px;border-radius:12px;margin-top:10px;font-size:.83rem;line-height:1.5;display:none;}
+.fb.show{display:block;}
+.fb.ok{background:rgba(57,255,20,.1);border:1px solid rgba(57,255,20,.3);color:var(--ok);}
+.fb.no{background:rgba(255,48,96,.1);border:1px solid rgba(255,48,96,.3);color:#ff8099;}
+.nxt{display:none;width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,var(--a1),var(--a4));border:none;border-radius:12px;color:#000;font-family:'Orbitron',monospace;font-size:.86rem;font-weight:700;cursor:pointer;}
+.nxt.show{display:block;animation:fadeIn .3s;}
+
+/* EQ */
+.eq-box{font-family:'Courier New',monospace;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);border-radius:10px;padding:13px;margin:8px 0;font-size:.9rem;line-height:2.4;word-break:break-all;}
+.ci{display:inline-block;width:44px;background:rgba(255,107,53,.12);border:none;border-bottom:2px solid var(--a2);border-radius:4px 4px 0 0;color:var(--a2);font-family:'Courier New',monospace;font-size:.9rem;font-weight:700;text-align:center;padding:2px 3px;outline:none;vertical-align:middle;margin:0 1px;}
+.ci:focus{border-bottom-color:var(--a1);color:var(--a1);}
+.ci.ok{border-bottom-color:var(--ok);color:var(--ok);background:rgba(57,255,20,.1);}
+.ci.no{border-bottom-color:var(--no);color:var(--no);background:rgba(255,48,96,.1);}
+.hint{font-size:.7rem;color:var(--muted);margin-bottom:5px;}
+
+/* CONT */
+.react-box{font-family:'Courier New',monospace;background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.25);border-radius:10px;padding:13px;margin:8px 0;font-size:.9rem;color:var(--ok);}
+.prod-list{display:flex;flex-direction:column;gap:7px;margin:8px 0;}
+.prod-row{display:flex;align-items:center;gap:7px;}
+.prod-plus{color:var(--muted);visibility:hidden;}
+.prod-row:not(:first-child) .prod-plus{visibility:visible;}
+.prod-inp{flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:'Courier New',monospace;font-size:.86rem;outline:none;}
+.prod-inp:focus{border-color:var(--a1);}
+.prod-inp.ok{border-color:var(--ok);color:var(--ok);}
+.prod-inp.no{border-color:var(--no);}
+.del-b{background:none;border:none;color:var(--muted);font-size:.95rem;cursor:pointer;padding:3px 6px;}
+.add-b{background:none;border:1.5px dashed var(--border);border-radius:7px;width:34px;height:34px;color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0;}
+.chk-b{background:linear-gradient(135deg,var(--a2),#ff4500);border:none;border-radius:10px;padding:10px 18px;color:#fff;font-family:'Orbitron',monospace;font-size:.74rem;cursor:pointer;font-weight:700;}
+.reveal{font-family:'Courier New',monospace;background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.2);border-radius:8px;padding:9px 13px;margin-top:7px;font-size:.84rem;color:var(--ok);}
+
+/* RESULT */
+.res-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px 24px;text-align:center;}
+.res-em{font-size:3rem;margin-bottom:10px;}
+.res-tl{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:900;margin-bottom:4px;}
+.res-pct{font-family:'Orbitron',monospace;font-size:2.8rem;font-weight:900;color:var(--gold);margin:10px 0;}
+.res-row{display:flex;gap:14px;justify-content:center;margin:10px 0;flex-wrap:wrap;}
+.rs .rv{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;}
+.rs .rl{font-size:.68rem;color:var(--muted);margin-top:2px;}
+
+/* TEACHER */
+.srch{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.88rem;outline:none;margin-bottom:12px;}
+.srch:focus{border-color:var(--a1);}
+.s-row{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:transform .15s;}
+.s-row:active{transform:scale(.99);}
+.s-name{font-weight:700;font-size:.9rem;margin-bottom:4px;}
+.s-id{color:var(--muted);font-size:.7rem;font-family:'Orbitron',monospace;}
+.s-bars{display:flex;gap:5px;margin-top:7px;}
+.sb{flex:1;}
+.sb-l{font-size:.62rem;color:var(--muted);margin-bottom:2px;}
+.sb-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.sb-fill{height:100%;border-radius:3px;}
+.sb-p{font-size:.66rem;margin-top:2px;}
+.s-avg{font-family:'Orbitron',monospace;font-size:.8rem;font-weight:700;float:right;}
+.s-warn{color:var(--no);font-size:.67rem;margin-top:5px;}
+
+/* DETAIL */
+.det-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;}
+.det-tl{font-family:'Orbitron',monospace;font-size:.8rem;color:var(--a1);margin-bottom:12px;}
+.det-row{display:flex;align-items:center;gap:10px;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--border);}
+.det-row:last-child{border:none;margin:0;padding:0;}
+.det-ico{font-size:1.3rem;flex-shrink:0;}
+.det-nm{font-size:.83rem;font-weight:600;flex:1;}
+.det-bar{flex:2;height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
+.det-fill{height:100%;border-radius:4px;}
+.det-pct{font-family:'Orbitron',monospace;font-size:.8rem;font-weight:700;min-width:38px;text-align:right;}
+.det-none{color:var(--no);font-size:.74rem;}
+
+/* LEADERBOARD */
+.lb-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 15px;margin-bottom:7px;display:flex;align-items:center;gap:11px;cursor:pointer;}
+.lb-rank{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;min-width:28px;}
+.lb-rank.r1{color:var(--gold);}
+.lb-rank.r2{color:#c0c0c0;}
+.lb-rank.r3{color:#cd7f32;}
+.lb-name{flex:1;font-size:.86rem;font-weight:600;}
+.lb-dots{display:flex;gap:3px;margin-top:3px;}
+.lb-dot{width:9px;height:9px;border-radius:50%;}
+.lb-pct{font-family:'Orbitron',monospace;font-size:.88rem;font-weight:700;}
+
+/* TABS */
+.tabs{display:flex;gap:8px;margin-bottom:16px;}
+.tab{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-family:'Exo 2',sans-serif;font-size:.8rem;cursor:pointer;}
+.tab.on{border-color:var(--a1);color:var(--a1);background:rgba(0,212,255,.08);}
+
+/* BACK */
+.back{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:8px 15px;color:var(--muted);font-family:'Exo 2',sans-serif;font-size:.8rem;cursor:pointer;margin-bottom:12px;}
+
+/* BTN ROW */
+.btn-row{display:flex;gap:9px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+.btn{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 18px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.86rem;cursor:pointer;}
+.btn.primary{background:linear-gradient(135deg,var(--a1),var(--a4));border:none;color:#000;font-weight:700;}
+
+/* NOTIF */
+.notif{position:fixed;top:16px;right:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:.84rem;z-index:1000;transform:translateX(130%);transition:transform .3s;max-width:240px;}
+.notif.show{transform:translateX(0);}
+.notif.ok-n{border-color:var(--ok);color:var(--ok);}
+.notif.no-n{border-color:var(--no);color:var(--no);}
+.streak-fx{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-family:'Orbitron',monospace;font-size:1.6rem;font-weight:900;color:var(--gold);text-shadow:0 0 24px var(--gold);pointer-events:none;z-index:2000;transition:transform .2s,opacity .5s;opacity:0;}
+.streak-fx.show{transform:translate(-50%,-50%) scale(1);opacity:1;}
+</style>
+</head>
+<body>
+<div class="notif" id="notif"></div>
+<div class="streak-fx" id="sfx"></div>
+
+<!-- LOGIN -->
+<div id="pg-login" class="pg on">
+  <div class="login-box">
+    <div class="login-logo">⚗️</div>
+    <div class="login-title">KIMYO OVR</div>
+    <div class="login-sub">Oksidlanish-Qaytarilish Reaksiyalari</div>
+    <input class="login-inp" id="l-inp" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="ID" maxlength="4" autocomplete="off">
+    <button class="login-btn" id="l-btn">KIRISH →</button>
+    <div class="login-err" id="l-err">❌ Noto'g'ri ID! Qaytadan urinib ko'ring.</div>
+  </div>
+</div>
+
+<!-- STUDENT -->
+<div id="pg-student" class="pg">
+  <div class="wrap">
+    <div class="hdr">
+      <div class="hdr-title">⚗️ KIMYO OVR</div>
+      <div class="hdr-right">
+        <div class="badge">👤 <span id="s-badge"></span></div>
+        <button class="out-btn" id="s-out">Chiqish</button>
+      </div>
+    </div>
+    <div id="s-main"></div>
+  </div>
+</div>
+
+<!-- TEACHER -->
+<div id="pg-teacher" class="pg">
+  <div class="wrap">
+    <div class="hdr">
+      <div class="hdr-title">⚗️ O'QITUVCHI</div>
+      <div class="hdr-right">
+        <div class="badge">👨‍🏫 Sultonmirzo</div>
+        <button class="out-btn" id="t-out">Chiqish</button>
+      </div>
+    </div>
+    <div id="t-main"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const ST = {
+  3971:"Nurmuhammad Abdumalikov",3890:"Iskandar Abduvasikov",
+  3807:"Aziza Ahmadjonova",3985:"Robiya Ahmadjonova",
+  1975:"Oftobxon Ahrorxojayeva",1882:"Guzal Aliyeva",
+  1965:"Mubina Baxtiyorova",3675:"Dono Choriyeva",
+  3255:"Farangiz Gaybullayev",1986:"Otabek Gayibnazarov",
+  1880:"Roziya Ilyasova",1824:"Asal Imamnazarova",
+  4177:"Diyora Isakova",1179:"Diyora Ismailova",
+  1828:"Zarinabonu Kamolova",2397:"Demir Kayimov",
+  2370:"Shodiyona Mahmaniyozova",1856:"Behruz Muhammadjonov",
+  1840:"Soliha Nurmuhammad",2185:"Sharif Rajabboyev",
+  3898:"Mirzobek Sayfullayev",3903:"Samina Sodiqjanova",
+  2331:"Shahrizoda Telemisova",1827:"Mehriyona Tolibjonova",
+  4263:"Ibrohim Toxirjonov",4105:"Murod Turaxanov",
+  3963:"Farzona Umarova",3997:"Sabina Xolboyeva",1500:"Dilbar Ziyatova"
+};
+const TEACHER_ID = 7777;
+const TEACHER_NAME = "Nekov Sultonmirzo";
+
+const SECS = [
+  {id:"co",name:"Oksidlanish darajasi",icon:"🔢",col:"#00d4ff"},
+  {id:"ox",name:"Oksidlovchi/Qaytaruvchi",icon:"⚡",col:"#39ff14"},
+  {id:"eq",name:"Koeffitsientlar",icon:"⚖️",col:"#ff6b35"},
+  {id:"cn",name:"Reaksiyani davom ettir",icon:"✍️",col:"#bf5af2"}
+];
+
+const DB = {
+co:[
+  {q:"KMnO₄ da Mn ning oksidlanish darajasi?",f:"K(+1)+Mn(?)+O₄(−8)=0",o:["+5","+6","+7","+4"],a:2,ex:"1+Mn−8=0 → Mn=+7"},
+  {q:"K₂Cr₂O₇ da Cr ning oksidlanish darajasi?",f:"K₂Cr₂O₇",o:["+3","+5","+6","+7"],a:2,ex:"2+2Cr−14=0 → Cr=+6"},
+  {q:"HNO₃ da N ning oksidlanish darajasi?",f:"H(+1)+N(?)+O₃(−6)=0",o:["+3","+4","+5","+1"],a:2,ex:"1+N−6=0 → N=+5"},
+  {q:"H₂SO₄ da S ning oksidlanish darajasi?",f:"H₂(+2)+S(?)+O₄(−8)=0",o:["+4","+6","+2","+8"],a:1,ex:"2+S−8=0 → S=+6"},
+  {q:"N₂H₄ da N ning oksidlanish darajasi?",f:"2N(?)+4H(+1)=0",o:["-1","-2","+1","+2"],a:1,ex:"2N+4=0 → N=−2"},
+  {q:"H₂S da S ning oksidlanish darajasi?",f:"H₂(+2)+S(?)=0",o:["-1","-2","+2","+4"],a:1,ex:"2+S=0 → S=−2"},
+  {q:"H₃PO₄ da P ning oksidlanish darajasi?",f:"3H(+3)+P(?)+4O(−8)=0",o:["+3","+4","+5","+2"],a:2,ex:"3+P−8=0 → P=+5"},
+  {q:"HClO₄ da Cl ning oksidlanish darajasi?",f:"H(+1)+Cl(?)+4O(−8)=0",o:["+5","+6","+7","+4"],a:2,ex:"1+Cl−8=0 → Cl=+7"},
+  {q:"KMnO₄ kislotali muhitda nima hosil bo'ladi?",f:"KMnO₄+H₂SO₄→",o:["MnO₂(+4)","MnO₄²⁻(+6)","Mn²⁺(+2)","Mn°(0)"],a:2,ex:"Kislotali: Mn+7→Mn+2, 5e qabul"},
+  {q:"KMnO₄ neytral muhitda nima hosil bo'ladi?",f:"KMnO₄ neytral→",o:["MnO₂(+4)","MnO₄²⁻(+6)","Mn²⁺(+2)","Mn°(0)"],a:0,ex:"Neytral: Mn+7→Mn+4, 3e qabul"},
+  {q:"Cu(NO₃)₂ da Cu ning oksidlanish darajasi?",f:"Cu(?)+2NO₃(−2)=0",o:["+1","+2","+3","+4"],a:1,ex:"NO₃=−1, 2×(−1)=−2, Cu=+2"},
+  {q:"Fe(NO₃)₃ da Fe ning oksidlanish darajasi?",f:"Fe(?)+(NO₃⁻)×3=0",o:["+2","+1","+3","+4"],a:2,ex:"NO₃=−1, Fe=+3"},
+  {q:"Mg(ClO₄)₂ da Cl ning oksidlanish darajasi?",f:"Mg(+2)+2Cl(?)+O₈(−16)=0",o:["+5","+6","+7","+3"],a:2,ex:"2+2Cl−16=0 → Cl=+7"},
+  {q:"Qaysi moddada S ning oksidlanish darajasi eng yuqori?",f:"H₂S, SO₂, H₂SO₄, H₂SO₃",o:["H₂S(−2)","SO₂(+4)","H₂SO₄(+6)","H₂SO₃(+4)"],a:2,ex:"H₂SO₄: S=+6 — eng yuqori"},
+  {q:"Al₂O₃ da Al ning oksidlanish darajasi?",f:"2Al(?)+O₃(−6)=0",o:["+2","+3","+4","+1"],a:1,ex:"2Al−6=0 → Al=+3"},
+],
+ox:[
+  {q:"Kuchli oksidlovchini tanlang:",f:null,o:["H₂S","Na°","KMnO₄","NH₃"],a:2,ex:"KMnO₄: Mn(+7) qaytariladi — kuchli oksidlovchi"},
+  {q:"3FeS₂+20HNO₃ reaksiyasida OKSIDLOVCHI?",f:"3FeS₂+20HNO₃→3Fe(NO₃)₃+6SO₂+11NO+10H₂O",o:["FeS₂","HNO₃","SO₂","Fe(NO₃)₃"],a:1,ex:"HNO₃: N(+5)→N(+2) qaytariladi"},
+  {q:"QAYTARUVCHI moddani toping:",f:null,o:["KMnO₄","H₂SO₄(konts.)","O₃","H₂S"],a:3,ex:"H₂S: S(−2) oksidlana oladi → qaytaruvchi"},
+  {q:"K₂Cr₂O₇ qanday modda?",f:"Cr:+6",o:["Faqat oksidlovchi","Faqat qaytaruvchi","Ikkalasi ham","Neytral"],a:0,ex:"Cr(+6) faqat qaytarila oladi → oksidlovchi"},
+  {q:"H₂O₂ qanday xususiyat ko'rsata oladi?",f:"O=−1",o:["Faqat oksidlovchi","Faqat qaytaruvchi","Ikkalasi ham","Hech qaysi"],a:2,ex:"O(−1)→O(−2): oksidlovchi; O(−1)→O(0): qaytaruvchi"},
+  {q:"O'rta darajali oksidlovchini tanlang:",f:null,o:["F₂","KMnO₄","Cl₂","K₂Cr₂O₇"],a:2,ex:"Cl₂ — o'rta oksidlovchi"},
+  {q:"NH₃ da N ning roli?",f:"NH₃",o:["N=−3, qaytaruvchi","N=−3, oksidlovchi","N=+3, qaytaruvchi","N=+3, oksidlovchi"],a:0,ex:"N=−3 oksidlana oladi → qaytaruvchi"},
+  {q:"MeNO₂→MeNO₃ da N qanday o'zgaradi?",f:"N:+3→?",o:["N:+3→+5 oksidlanadi","N:+5→+3 qaytariladi","O'zgarmaydi","N:+4→+5"],a:0,ex:"N(+3→+5): 2e beradi, qaytaruvchi"},
+  {q:"H₂O₂→O₂ da H₂O₂ ning roli?",f:"O(−1→0)",o:["Oksidlovchi","Qaytaruvchi","Ikkalasi","Neytral"],a:1,ex:"O(−1→0): e⁻ beradi → qaytaruvchi"},
+  {q:"5Fe+HNO₃(suyult.) da Fe ning roli?",f:"5Fe°+HNO₃→",o:["Oksidlovchi","Qaytaruvchi","Katalizator","Hech biri"],a:1,ex:"Fe°→Fe³⁺: e⁻ beradi → qaytaruvchi"},
+],
+eq:[
+  {q:"Barcha koeffitsientlarni yozing:",h:"FeS₂+HNO₃",
+   p:[{t:"",i:true,a:"3"},{t:"(FeS₂)+",i:false},{t:"",i:true,a:"20"},{t:"HNO₃→",i:false},{t:"",i:true,a:"3"},{t:"Fe(NO₃)₃+",i:false},{t:"",i:true,a:"6"},{t:"SO₂+",i:false},{t:"",i:true,a:"11"},{t:"NO+",i:false},{t:"",i:true,a:"10"},{t:"H₂O",i:false}],
+   ex:"Koeff: 3,20,3,6,11,10"},
+  {q:"Barcha koeffitsientlarni yozing:",h:"Li+HNO₃(suyult.)",
+   p:[{t:"",i:true,a:"3"},{t:"Li+",i:false},{t:"",i:true,a:"8"},{t:"HNO₃→",i:false},{t:"",i:true,a:"3"},{t:"LiNO₃+",i:false},{t:"",i:true,a:"1"},{t:"NH₄NO₃+",i:false},{t:"",i:true,a:"2"},{t:"H₂O",i:false}],
+   ex:"Koeff: 3,8,3,1,2"},
+  {q:"Barcha koeffitsientlarni yozing:",h:"Al+HNO₃(konts.)",
+   p:[{t:"",i:true,a:"1"},{t:"Al+",i:false},{t:"",i:true,a:"6"},{t:"HNO₃→",i:false},{t:"",i:true,a:"1"},{t:"Al(NO₃)₃+",i:false},{t:"",i:true,a:"3"},{t:"NO₂+",i:false},{t:"",i:true,a:"3"},{t:"H₂O",i:false}],
+   ex:"Koeff: 1,6,1,3,3"},
+  {q:"Barcha koeffitsientlarni yozing:",h:"KNO₂+KMnO₄+H₂SO₄",
+   p:[{t:"",i:true,a:"5"},{t:"KNO₂+",i:false},{t:"",i:true,a:"2"},{t:"KMnO₄+",i:false},{t:"",i:true,a:"3"},{t:"H₂SO₄→",i:false},{t:"",i:true,a:"5"},{t:"KNO₃+",i:false},{t:"",i:true,a:"2"},{t:"MnSO₄+",i:false},{t:"",i:true,a:"1"},{t:"K₂SO₄+",i:false},{t:"",i:true,a:"3"},{t:"H₂O",i:false}],
+   ex:"Koeff: 5,2,3,5,2,1,3"},
+  {q:"Barcha koeffitsientlarni yozing:",h:"KI+K₂Cr₂O₇+H₂SO₄",
+   p:[{t:"",i:true,a:"6"},{t:"KI+",i:false},{t:"",i:true,a:"1"},{t:"K₂Cr₂O₇+",i:false},{t:"",i:true,a:"7"},{t:"H₂SO₄→",i:false},{t:"",i:true,a:"3"},{t:"I₂+",i:false},{t:"",i:true,a:"1"},{t:"Cr₂(SO₄)₃+",i:false},{t:"",i:true,a:"4"},{t:"K₂SO₄+",i:false},{t:"",i:true,a:"7"},{t:"H₂O",i:false}],
+   ex:"Koeff: 6,1,7,3,1,4,7"},
+  {q:"Barcha koeffitsientlarni yozing:",h:"Cr+H₂SO₄(konts.)",
+   p:[{t:"",i:true,a:"8"},{t:"Cr+",i:false},{t:"",i:true,a:"15"},{t:"H₂SO₄→",i:false},{t:"",i:true,a:"4"},{t:"Cr₂(SO₄)₃+",i:false},{t:"",i:true,a:"3"},{t:"H₂S+",i:false},{t:"",i:true,a:"12"},{t:"H₂O",i:false}],
+   ex:"Koeff: 8,15,4,3,12"},
+],
+cn:[
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"KCl + KMnO₄ + H₂SO₄ →",ans:["Cl₂","MnSO₄","K₂SO₄","H₂O"],ex:"Cl(−1→0), Mn(+7→+2)"},
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"KNO₂ + KMnO₄ + H₂SO₄ →",ans:["KNO₃","MnSO₄","K₂SO₄","H₂O"],ex:"N(+3→+5), Mn(+7→+2)"},
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"MeSO₃ + KMnO₄ + H₂SO₄ →",ans:["MeSO₄","MnSO₄","H₂O"],ex:"S(+4→+6), Mn(+7→+2)"},
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"KI + K₂Cr₂O₇ + H₂SO₄ →",ans:["I₂","Cr₂(SO₄)₃","K₂SO₄","H₂O"],ex:"I(−1→0), Cr(+6→+3)"},
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"FeS₂ + HNO₃(konts.) →",ans:["Fe(NO₃)₃","SO₂","NO","H₂O"],ex:"Fe+2→+3, S−1→+4, N+5→+2"},
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"Li + HNO₃(suyultirilgan) →",ans:["LiNO₃","NH₄NO₃","H₂O"],ex:"Li→Li⁺, N+5→N−3"},
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"CuO + NH₃ →",ans:["Cu","N₂","H₂O"],ex:"Cu+2→0, N−3→0"},
+  {q:"Reaktantlar berilgan. Mahsulotlarni yozing:",r:"KClO₃ + P →",ans:["KCl","P₂O₅"],ex:"Cl+5→−1, P0→+5"},
+]
+};
+
+// ============================================================
+// STORAGE
+// ============================================================
+function getRaw(){try{return JSON.parse(localStorage.getItem('ovr_r')||'{}');}catch{return {};}}
+function saveR(sid,sec,pct){
+  const r=getRaw();
+  if(!r[sid])r[sid]={};
+  if(r[sid][sec]==null||pct>r[sid][sec]){r[sid][sec]=pct;localStorage.setItem('ovr_r',JSON.stringify(r));}
+}
+function getR(sid){return getRaw()[sid]||{};}
+
+// ============================================================
+// AUTH
+// ============================================================
+let CU = null; // current user
+
+function initLogin(){
+  const btn = document.getElementById('l-btn');
+  const inp = document.getElementById('l-inp');
+  const err = document.getElementById('l-err');
+
+  btn.addEventListener('click', tryLogin);
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') tryLogin(); });
+  document.getElementById('s-out').addEventListener('click', logout);
+  document.getElementById('t-out').addEventListener('click', logout);
+}
+
+function tryLogin(){
+  const inp = document.getElementById('l-inp');
+  const err = document.getElementById('l-err');
+  const val = inp.value.replace(/\D/g,'').trim();
+  const id = parseInt(val);
+
+  err.style.display = 'none';
+
+  if(!val || isNaN(id)){
+    err.style.display = 'block';
+    return;
+  }
+
+  if(id === TEACHER_ID){
+    CU = {id:TEACHER_ID, name:TEACHER_NAME, teacher:true};
+    inp.value = '';
+    show('pg-teacher');
+    renderTeacher();
+    return;
+  }
+
+  if(ST[id]){
+    CU = {id:id, name:ST[id], teacher:false};
+    inp.value = '';
+    document.getElementById('s-badge').textContent = ST[id].split(' ')[0];
+    show('pg-student');
+    renderHome();
+    return;
+  }
+
+  err.style.display = 'block';
+}
+
+function logout(){
+  CU = null;
+  show('pg-login');
+  document.getElementById('l-inp').value = '';
+  document.getElementById('l-err').style.display = 'none';
+}
+
+function show(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+// ============================================================
+// STUDENT HOME
+// ============================================================
+function col(pct){
+  if(pct==null)return '#6b7fa3';
+  if(pct>=80)return '#39ff14';
+  if(pct>=50)return '#ffd700';
+  return '#ff6b35';
+}
+
+function renderHome(){
+  const res = getR(CU.id);
+  let tot=0,cnt=0;
+  SECS.forEach(s=>{if(res[s.id]!=null){tot+=res[s.id];cnt++;}});
+  const avg = cnt>0?Math.round(tot/cnt):0;
+  const left = SECS.filter(s=>res[s.id]==null).length;
+
+  let h = `<div class="stats">
+    <div class="sp gold"><span class="sp-v">${cnt>0?avg+'%':'—'}</span><span class="sp-l">Umumiy</span></div>
+    <div class="sp green"><span class="sp-v">${cnt}/4</span><span class="sp-l">Bajarilgan</span></div>
+    <div class="sp red"><span class="sp-v">${left}</span><span class="sp-l">Qolgan</span></div>
+  </div><div class="sec-grid">`;
+
+  SECS.forEach(s=>{
+    const pct = res[s.id]??null;
+    const c = col(pct);
+    h+=`<div class="sec-card" onclick="startGame('${s.id}')">
+      <div class="sec-icon">${s.icon}</div>
+      <div class="sec-name">${s.name}</div>
+      <div class="sec-bar"><div class="sec-fill" style="width:${pct??0}%;background:${c}"></div></div>
+      ${pct!=null?`<div class="sec-pct" style="color:${c}">${pct}%</div>`:`<div class="sec-none">Bajarilmagan</div>`}
+    </div>`;
+  });
+  h+='</div>';
+  document.getElementById('s-main').innerHTML = h;
+}
+
+// ============================================================
+// GAME
+// ============================================================
+const TMAP = {co:20,ox:20,eq:60,cn:90};
+const USED = {};
+let G = {};
+
+function shuffle(mode){
+  const arr=DB[mode];
+  if(!USED[mode])USED[mode]=[];
+  if(USED[mode].length>=arr.length)USED[mode]=[];
+  const av=arr.map((_,i)=>i).filter(i=>!USED[mode].includes(i));
+  for(let i=av.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[av[i],av[j]]=[av[j],av[i]];}
+  const pk=av.slice(0,Math.min(8,av.length));
+  USED[mode].push(...pk);
+  return pk.map(i=>arr[i]);
+}
+
+function startGame(mode){
+  G={mode,qs:shuffle(mode),idx:0,score:0,lives:3,streak:0,ms:0,cor:0,wr:0,answered:false,timer:null};
+  document.getElementById('s-main').innerHTML=`
+    <button class="back" onclick="renderHome()">← Orqaga</button>
+    <div class="g-stats">
+      <div class="gp sc">🏆 <span class="gp-v" id="gsc">0</span></div>
+      <div class="gp lv">❤️ <span class="gp-v" id="glv">3</span></div>
+      <div class="gp st">🔥 <span class="gp-v" id="gst">0</span></div>
+    </div>
+    <div class="prog-wrap"><div class="prog-fill" id="gpr" style="width:0%"></div></div>
+    <div class="timer-wrap"><div class="timer-fill" id="gtm" style="width:100%"></div></div>
+    <div class="q-card" id="qcard">
+      <div class="q-cat" id="qcat"></div>
+      <div class="q-txt" id="qtxt"></div>
+      <div id="qbod"></div>
+      <div class="fb" id="qfb"></div>
+    </div>
+    <button class="nxt" id="nxt" onclick="nextQ()">KEYINGI →</button>
+  `;
+  renderQ();
+}
+
+function renderQ(){
+  clearInterval(G.timer);
+  if(G.idx>=G.qs.length||G.lives<=0){endG();return;}
+  const q=G.qs[G.idx];
+  G.answered=false;
+  const cats={co:"OKSIDLANISH DARAJASI",ox:"OKSIDLOVCHI/QAYTARUVCHI",eq:"KOEFFITSIENTLAR",cn:"REAKSIYANI DAVOM ETTIR"};
+  document.getElementById('qcat').textContent=cats[G.mode];
+  document.getElementById('qtxt').textContent=q.q;
+  document.getElementById('qfb').className='fb';
+  document.getElementById('nxt').className='nxt';
+  document.getElementById('gpr').style.width=(G.idx/G.qs.length*100)+'%';
+  updG();
+  const bod=document.getElementById('qbod');bod.innerHTML='';
+  if(G.mode==='eq')renderEQ(q,bod);
+  else if(G.mode==='cn')renderCN(q,bod);
+  else renderMC(q,bod);
+  startT(TMAP[G.mode]);
+}
+
+function renderMC(q,bod){
+  if(q.f){const d=document.createElement('div');d.className='q-form';d.textContent=q.f;bod.appendChild(d);}
+  const d=document.createElement('div');d.className='opts';
+  q.o.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=o;
+    b.addEventListener('click',()=>checkMC(i,q));d.appendChild(b);
+  });
+  bod.appendChild(d);
+}
+
+function checkMC(i,q){
+  if(G.answered)return;G.answered=true;clearInterval(G.timer);
+  const bs=document.querySelectorAll('.opt');bs.forEach(b=>b.disabled=true);
+  if(i===q.a){
+    bs[i].classList.add('ok');
+    const bn=10+G.streak*2;G.score+=bn;G.cor++;G.streak++;
+    if(G.streak>G.ms)G.ms=G.streak;
+    notif('✅ To\'g\'ri! +'+bn,'ok-n');
+    if(G.streak>=3)sfx('🔥'+G.streak+'ta!');
+    fb(true,q.ex);
+  }else{
+    bs[i].classList.add('no');bs[q.a].classList.add('ok');
+    G.wr++;G.lives--;G.streak=0;
+    notif('❌ Noto\'g\'ri!','no-n');fb(false,q.ex);
+  }
+  updG();document.getElementById('nxt').className='nxt show';
+}
+
+function renderEQ(q,bod){
+  if(q.h){const d=document.createElement('div');d.className='hint';d.textContent='💡 '+q.h;bod.appendChild(d);}
+  const box=document.createElement('div');box.className='eq-box';
+  q.p.forEach(pt=>{
+    if(pt.i){
+      const inp=document.createElement('input');
+      inp.type='text';inp.className='ci';inp.dataset.a=pt.a;inp.maxLength=3;inp.placeholder='?';
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter')checkEQ(q);});
+      box.appendChild(inp);
+    }else box.appendChild(document.createTextNode(pt.t));
+  });
+  bod.appendChild(box);
+  const b=document.createElement('button');b.className='chk-b';b.textContent='TEKSHIRISH ✓';b.addEventListener('click',()=>checkEQ(q));bod.appendChild(b);
+}
+
+function checkEQ(q){
+  if(G.answered)return;G.answered=true;clearInterval(G.timer);
+  const ins=[...document.querySelectorAll('.ci')];
+  let all=true,cnt=0;
+  ins.forEach(inp=>{
+    inp.disabled=true;
+    if(inp.value.trim()===inp.dataset.a){inp.classList.add('ok');cnt++;}
+    else{inp.classList.add('no');inp.value=inp.dataset.a;all=false;}
+  });
+  if(all){
+    const bn=20+G.streak*3;G.score+=bn;G.cor++;G.streak++;
+    if(G.streak>G.ms)G.ms=G.streak;
+    notif('✅ Ajoyib! +'+bn,'ok-n');fb(true,q.ex);
+  }else{
+    G.wr++;if(cnt===0)G.lives--;G.streak=0;
+    notif(cnt>0?'⚠️ Qisman':'❌ Noto\'g\'ri!',cnt>0?'ok-n':'no-n');fb(false,q.ex);
+  }
+  updG();document.getElementById('nxt').className='nxt show';
+}
+
+function renderCN(q,bod){
+  const rb=document.createElement('div');rb.className='react-box';rb.textContent='📌 '+q.r;bod.appendChild(rb);
+  const list=document.createElement('div');list.className='prod-list';list.id='pl';
+  for(let i=0;i<q.ans.length;i++)addPR(list);
+  bod.appendChild(list);
+  const ctrl=document.createElement('div');ctrl.style='display:flex;gap:9px;margin-top:7px;align-items:center;';
+  const ab=document.createElement('button');ab.className='add-b';ab.textContent='+';ab.addEventListener('click',()=>addPR(document.getElementById('pl')));
+  const cb=document.createElement('button');cb.className='chk-b';cb.textContent='TEKSHIRISH ✓';cb.addEventListener('click',()=>checkCN(q));
+  ctrl.appendChild(ab);ctrl.appendChild(cb);bod.appendChild(ctrl);
+}
+
+function addPR(list){
+  const row=document.createElement('div');row.className='prod-row';
+  const pl=document.createElement('span');pl.className='prod-plus';pl.textContent='+';row.appendChild(pl);
+  const inp=document.createElement('input');inp.type='text';inp.className='prod-inp';inp.placeholder='';
+  const db=document.createElement('button');db.className='del-b';db.textContent='✕';db.addEventListener('click',()=>{if(list.children.length>1)list.removeChild(row);});
+  row.appendChild(inp);row.appendChild(db);list.appendChild(row);
+}
+
+function nrm(s){return s.trim().toLowerCase().replace(/\s+/g,'').replace(/₂/g,'2').replace(/₃/g,'3').replace(/₄/g,'4').replace(/₅/g,'5').replace(/₆/g,'6');}
+
+function checkCN(q){
+  if(G.answered)return;G.answered=true;clearInterval(G.timer);
+  const ins=[...document.getElementById('pl').querySelectorAll('.prod-inp')];
+  const ua=ins.map(i=>nrm(i.value)).filter(v=>v);
+  const ca=q.ans.map(a=>nrm(a));
+  let found=0;const mt=new Set();
+  ua.forEach(u=>{const idx=ca.findIndex((c,i)=>!mt.has(i)&&c===u);if(idx!==-1){found++;mt.add(idx);}});
+  ins.forEach(inp=>{if(!inp.value.trim())return;inp.classList.add(ca.includes(nrm(inp.value))?'ok':'no');inp.disabled=true;});
+  const rv=document.createElement('div');rv.className='reveal';rv.textContent='✅ To\'g\'ri: '+q.ans.join(' + ');document.getElementById('pl').after(rv);
+  const allOk=found===ca.length&&ua.length===ca.length;
+  const part=found>0&&!allOk;
+  if(allOk){
+    const bn=25+G.streak*4;G.score+=bn;G.cor++;G.streak++;
+    if(G.streak>G.ms)G.ms=G.streak;
+    notif('🎉 Ajoyib! +'+bn,'ok-n');fb(true,q.ex);
+  }else{
+    G.wr++;if(!part)G.lives--;G.streak=0;
+    notif(part?'⚠️ '+found+'/'+ca.length:'❌ Noto\'g\'ri!',part?'ok-n':'no-n');fb(false,q.ex);
+  }
+  updG();document.getElementById('nxt').className='nxt show';
+}
+
+function startT(max){
+  G.timerMax=max;G.tl=max;
+  const fill=document.getElementById('gtm');
+  fill.style.width='100%';fill.style.background='var(--ok)';
+  G.timer=setInterval(()=>{
+    G.tl--;
+    const pct=(G.tl/G.timerMax)*100;
+    fill.style.width=pct+'%';
+    if(pct<40)fill.style.background='var(--a2)';
+    if(pct<20)fill.style.background='var(--no)';
+    if(G.tl<=0){clearInterval(G.timer);if(!G.answered)timeOut();}
+  },1000);
+}
+
+function timeOut(){
+  G.answered=true;G.wr++;G.lives--;G.streak=0;
+  notif('⏰ Vaqt tugadi!','no-n');
+  const q=G.qs[G.idx];
+  if(G.mode==='co'||G.mode==='ox'){
+    const bs=document.querySelectorAll('.opt');
+    if(bs[q.a])bs[q.a].classList.add('ok');bs.forEach(b=>b.disabled=true);
+  }else if(G.mode==='eq'){
+    document.querySelectorAll('.ci').forEach(i=>{i.disabled=true;i.value=i.dataset.a;i.classList.add('ok');});
+  }else{
+    const rv=document.createElement('div');rv.className='reveal';rv.textContent='✅ To\'g\'ri: '+q.ans.join(' + ');
+    const pl=document.getElementById('pl');if(pl)pl.after(rv);
+    document.querySelectorAll('.prod-inp').forEach(i=>i.disabled=true);
+  }
+  fb(false,q.ex);updG();document.getElementById('nxt').className='nxt show';
+}
+
+function nextQ(){G.idx++;renderQ();}
+
+function endG(){
+  clearInterval(G.timer);
+  const tot=G.cor+G.wr;
+  const pct=tot>0?Math.round(G.cor/tot*100):0;
+  saveR(CU.id,G.mode,pct);
+  const nm=SECS.find(s=>s.id===G.mode)?.name||'';
+  let em,tl;
+  if(pct>=90){em='🏆';tl="A'LO!";}
+  else if(pct>=70){em='⭐';tl='YAXSHI!';}
+  else if(pct>=50){em='📚';tl="O'RTA";}
+  else{em='💪';tl="Qayta urinib ko'ring";}
+  document.getElementById('s-main').innerHTML=`
+    <button class="back" onclick="renderHome()">← Asosiy menyu</button>
+    <div class="res-box">
+      <div class="res-em">${em}</div>
+      <div class="res-tl">${tl}</div>
+      <div style="color:var(--muted);font-size:.78rem;margin-bottom:6px">${nm}</div>
+      <div class="res-pct">${pct}%</div>
+      <div class="res-row">
+        <div class="rs"><div class="rv" style="color:var(--ok)">${G.cor}</div><div class="rl">To'g'ri</div></div>
+        <div class="rs"><div class="rv" style="color:var(--no)">${G.wr}</div><div class="rl">Noto'g'ri</div></div>
+        <div class="rs"><div class="rv" style="color:var(--gold)">${G.ms}</div><div class="rl">Max zanjir</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="renderHome()">MENYU</button>
+        <button class="btn" onclick="startGame('${G.mode}')">QAYTA</button>
+      </div>
+    </div>
+  `;
+}
+
+function fb(ok,txt){
+  const el=document.getElementById('qfb');
+  el.className='fb show '+(ok?'ok':'no');
+  el.textContent=(ok?'✅ ':'💡 ')+txt;
+}
+function updG(){
+  const gs=document.getElementById('gsc');const gl=document.getElementById('glv');const gst=document.getElementById('gst');
+  if(gs)gs.textContent=G.score;if(gl)gl.textContent=G.lives;if(gst)gst.textContent=G.streak;
+}
+
+// ============================================================
+// TEACHER
+// ============================================================
+let TV = 'list';
+let TS = null;
+
+function renderTeacher(){
+  document.getElementById('t-main').innerHTML=`
+    <div class="tabs">
+      <button class="tab ${TV==='list'||TV==='det'?'on':''}" onclick="TV='list';TS=null;renderTeacher()">📋 O'quvchilar</button>
+      <button class="tab ${TV==='lb'?'on':''}" onclick="TV='lb';renderTeacher()">🏆 Reyting</button>
+    </div>
+    <div id="tmn"></div>
+  `;
+  if(TV==='list')renderTList();
+  else if(TV==='det')renderTDet();
+  else renderTLB();
+}
+
+function renderTList(){
+  const RR=getRaw();
+  const ids=Object.keys(ST).map(Number);
+  ids.sort((a,b)=>ST[a].localeCompare(ST[b]));
+  let h=`<input class="srch" id="tsrch" placeholder="🔍 Ism yoki ID..." oninput="filterT()">
+  <div id="tslist">`;
+  ids.forEach(id=>{
+    const res=RR[id]||{};
+    const dn=SECS.filter(s=>res[s.id]!=null);
+    const avg=dn.length>0?Math.round(dn.reduce((a,s)=>a+res[s.id],0)/dn.length):null;
+    const c=col(avg);
+    const nd=SECS.filter(s=>res[s.id]==null);
+    h+=`<div class="s-row" id="sr${id}" onclick="TS=${id};TV='det';renderTeacher()">
+      <div style="display:flex;justify-content:space-between">
+        <div><div class="s-name">${ST[id]}</div><div class="s-id">ID: ${id}</div></div>
+        <div class="s-avg" style="color:${c}">${avg!=null?avg+'%':'—'}</div>
+      </div>
+      <div class="s-bars">
+        ${SECS.map(s=>{const p=res[s.id]??null;const c2=col(p);return`<div class="sb"><div class="sb-l">${s.icon}</div><div class="sb-track"><div class="sb-fill" style="width:${p??0}%;background:${c2}"></div></div><div class="sb-p" style="color:${c2}">${p!=null?p+'%':'—'}</div></div>`;}).join('')}
+      </div>
+      ${nd.length>0?`<div class="s-warn">⚠️ Bajarilmagan: ${nd.map(s=>s.icon+s.name).join(', ')}</div>`:''}
+    </div>`;
+  });
+  h+='</div>';
+  document.getElementById('tmn').innerHTML=h;
+}
+
+function filterT(){
+  const q=document.getElementById('tsrch').value.toLowerCase();
+  document.querySelectorAll('.s-row').forEach(r=>{
+    const nm=r.querySelector('.s-name').textContent.toLowerCase();
+    const id=r.querySelector('.s-id').textContent.toLowerCase();
+    r.style.display=(nm.includes(q)||id.includes(q))?'':'none';
+  });
+}
+
+function renderTDet(){
+  const id=TS;const res=getR(id);
+  const dn=SECS.filter(s=>res[s.id]!=null);
+  const avg=dn.length>0?Math.round(dn.reduce((a,s)=>a+res[s.id],0)/dn.length):null;
+  let h=`<button class="back" onclick="TV='list';renderTeacher()">← Orqaga</button>
+  <div class="stats">
+    <div class="sp gold"><span class="sp-v">${avg!=null?avg+'%':'—'}</span><span class="sp-l">Umumiy</span></div>
+    <div class="sp green"><span class="sp-v">${dn.length}/4</span><span class="sp-l">Bajarilgan</span></div>
+  </div>
+  <div class="det-box"><div class="det-tl">👤 ${ST[id]} | ID: ${id}</div>`;
+  SECS.forEach(s=>{
+    const p=res[s.id]??null;const c=col(p);
+    h+=`<div class="det-row">
+      <div class="det-ico">${s.icon}</div>
+      <div class="det-nm">${s.name}</div>
+      ${p!=null?`<div class="det-bar"><div class="det-fill" style="width:${p}%;background:${c}"></div></div><div class="det-pct" style="color:${c}">${p}%</div>`:`<div class="det-none">Bajarilmagan</div>`}
+    </div>`;
+  });
+  h+='</div>';
+  document.getElementById('tmn').innerHTML=h;
+}
+
+function renderTLB(){
+  const RR=getRaw();
+  const ids=Object.keys(ST).map(Number);
+  const ranked=ids.map(id=>{
+    const res=RR[id]||{};
+    const dn=SECS.filter(s=>res[s.id]!=null);
+    const avg=dn.length>0?Math.round(dn.reduce((a,s)=>a+res[s.id],0)/dn.length):null;
+    return{id,avg,res};
+  }).sort((a,b)=>{
+    if(a.avg==null&&b.avg==null)return 0;
+    if(a.avg==null)return 1;if(b.avg==null)return -1;
+    return b.avg-a.avg;
+  });
+  let h=`<div style="font-size:.76rem;color:var(--muted);margin-bottom:12px">Jami ${ids.length} o'quvchi</div>`;
+  ranked.forEach((r,i)=>{
+    const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
+    const rk=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+    const c=col(r.avg);
+    h+=`<div class="lb-row" onclick="TS=${r.id};TV='det';renderTeacher()">
+      <div class="lb-rank ${rc}">${rk}</div>
+      <div style="flex:1">
+        <div class="lb-name">${ST[r.id]}</div>
+        <div class="lb-dots">${SECS.map(s=>`<div class="lb-dot" style="background:${col(r.res[s.id]??null)}"></div>`).join('')}</div>
+      </div>
+      <div class="lb-pct" style="color:${c}">${r.avg!=null?r.avg+'%':'—'}</div>
+    </div>`;
+  });
+  document.getElementById('tmn').innerHTML=h;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function notif(msg,cls){
+  const n=document.getElementById('notif');n.textContent=msg;n.className='notif '+cls+' show';
+  setTimeout(()=>n.classList.remove('show'),2200);
+}
+function sfx(msg){
+  const el=document.getElementById('sfx');el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),1300);
+}
+
+// INIT
+initLogin();
+</script>
+</body>
+</html>
